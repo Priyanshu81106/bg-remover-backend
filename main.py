@@ -7,7 +7,7 @@ from flask_cors import CORS
 app = Flask(__name__)
 CORS(app)
 
-REPLICATE_API_KEY = os.getenv("REPLICATE_API_KEY")
+REPLICATE_API_TOKEN = os.getenv("REPLICATE_API_TOKEN")
 
 
 @app.route("/")
@@ -21,26 +21,25 @@ def remove_bg():
         return jsonify({"error": "No image uploaded"}), 400
 
     image = request.files["image"]
-    image_bytes = image.read()
-    image_base64 = base64.b64encode(image_bytes).decode("utf-8")
+    image_base64 = base64.b64encode(image.read()).decode("utf-8")
 
     headers = {
-        "Authorization": f"Token {REPLICATE_API_KEY}",
-        "Content-Type": "application/json",
+        "Authorization": f"Token {REPLICATE_API_TOKEN}",
+        "Content-Type": "application/json"
     }
 
     payload = {
-        "model": "cjwbw/rembg",
+        "version": "fb8af171cfa1616ddcf1242c093f9c46bcada5ad4cf6f2fbe8b81b330ec5c003",
         "input": {
             "image": f"data:image/png;base64,{image_base64}"
         }
     }
 
-    # 1) Create prediction
+    # Create prediction
     response = requests.post(
         "https://api.replicate.com/v1/predictions",
-        json=payload,
         headers=headers,
+        json=payload
     )
 
     if response.status_code != 201:
@@ -53,7 +52,7 @@ def remove_bg():
     prediction = response.json()
     prediction_url = prediction["urls"]["get"]
 
-    # 2) Poll until finished
+    # Poll until complete
     while True:
         poll = requests.get(prediction_url, headers=headers).json()
         status = poll.get("status")
