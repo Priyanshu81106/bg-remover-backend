@@ -26,12 +26,13 @@ def remove_bg():
         "Content-Type": "application/json"
     }
 
-    payload = {
-        "version": "cjwbw/rembg:2ad2e06c746a2b5ef6726cdd89bfcaba14d3f9bb87bc6c2024b5f47aebda211d",
-        "input": {
-            "image": f"data:image/png;base64,{image_base64}"
-        }
+payload = {
+    "model": "cjwbw/rembg",
+    "input": {
+        "image": f"data:image/png;base64,{image_base64}"
     }
+}
+
 
     # 1️⃣ Create prediction
     response = requests.post(
