@@ -9,9 +9,11 @@ CORS(app)
 
 REPLICATE_API_KEY = os.getenv("REPLICATE_API_KEY")
 
+
 @app.route("/")
 def home():
     return "Backend working successfully!"
+
 
 @app.route("/remove-bg", methods=["POST"])
 def remove_bg():
@@ -19,26 +21,26 @@ def remove_bg():
         return jsonify({"error": "No image uploaded"}), 400
 
     image = request.files["image"]
-    image_base64 = base64.b64encode(image.read()).decode("utf-8")
+    image_bytes = image.read()
+    image_base64 = base64.b64encode(image_bytes).decode("utf-8")
 
     headers = {
         "Authorization": f"Token {REPLICATE_API_KEY}",
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
     }
 
-payload = {
-    "model": "cjwbw/rembg",
-    "input": {
-        "image": f"data:image/png;base64,{image_base64}"
+    payload = {
+        "model": "cjwbw/rembg",
+        "input": {
+            "image": f"data:image/png;base64,{image_base64}"
+        }
     }
-}
 
-
-    # 1️⃣ Create prediction
+    # 1) Create prediction
     response = requests.post(
         "https://api.replicate.com/v1/predictions",
         json=payload,
-        headers=headers
+        headers=headers,
     )
 
     if response.status_code != 201:
@@ -48,19 +50,16 @@ payload = {
             "replicate_response": response.text
         }), 500
 
-
     prediction = response.json()
     prediction_url = prediction["urls"]["get"]
 
-    # 2️⃣ Poll until done
+    # 2) Poll until finished
     while True:
         poll = requests.get(prediction_url, headers=headers).json()
-        status = poll["status"]
+        status = poll.get("status")
 
         if status == "succeeded":
-            return jsonify({
-                "output": poll["output"][0]
-            })
+            return jsonify({"output": poll["output"][0]})
 
         if status == "failed":
             return jsonify({"error": "Background removal failed"}), 500
