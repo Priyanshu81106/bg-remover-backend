@@ -33,17 +33,28 @@ def remove_bg():
         }
     }
 
+    # 1️⃣ Create prediction
     response = requests.post(
         "https://api.replicate.com/v1/predictions",
         json=payload,
         headers=headers
     )
 
-    if response.status_code not in [200, 201]:
-        return jsonify({"error": "Background removal failed"}), 500
+    if response.status_code != 201:
+        return jsonify({"error": "Failed to create prediction"}), 500
 
     prediction = response.json()
+    prediction_url = prediction["urls"]["get"]
 
-    return jsonify({
-        "output": prediction["output"][0]
-    })
+    # 2️⃣ Poll until done
+    while True:
+        poll = requests.get(prediction_url, headers=headers).json()
+        status = poll["status"]
+
+        if status == "succeeded":
+            return jsonify({
+                "output": poll["output"][0]
+            })
+
+        if status == "failed":
+            return jsonify({"error": "Background removal failed"}), 500
