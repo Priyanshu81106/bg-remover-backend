@@ -41,7 +41,12 @@ def remove_bg():
     )
 
     if response.status_code != 201:
-        return jsonify({"error": "Failed to create prediction"}), 500
+        return jsonify({
+            "error": "Failed to create prediction",
+            "status_code": response.status_code,
+            "replicate_response": response.text
+        }), 500
+
 
     prediction = response.json()
     prediction_url = prediction["urls"]["get"]
